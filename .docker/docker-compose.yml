@@ -1,0 +1,54 @@
+version: "3.1"
+services:
+
+    blog-redis:
+      image: redis:alpine
+      container_name: blog-redis
+      ports:
+        - "6379:6379"
+
+    blog-mysql:
+      image: mysql:5.6
+      container_name: blog-mysql
+      working_dir: /application
+      volumes:
+        - ../:/application
+      environment:
+        - MYSQL_ROOT_PASSWORD=rootPass
+        - MYSQL_DATABASE=blog_laravel
+        - MYSQL_USER=blog
+        - MYSQL_PASSWORD=blogPass
+      ports:
+        - "3306:3306"
+
+    blog-webserver:
+      image: nginx:alpine
+      container_name: blog-webserver
+      working_dir: /application
+      volumes:
+          - ../:/application
+          - ./phpdocker/nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+      ports:
+       - "8080:80"
+
+    blog-php-fpm:
+      build: phpdocker/php-fpm
+      container_name: blog-php-fpm
+      working_dir: /application
+      volumes:
+        - ../:/application
+        - ./phpdocker/php-fpm/php-ini-overrides.ini:/etc/php/7.3/fpm/conf.d/99-overrides.ini
+      ports:
+        - "9000:9000"
+
+    blog-phpmyadmin:
+      image: phpmyadmin/phpmyadmin
+      container_name: blog-phpmyadmin
+      environment:
+        - PMA_HOST=blog-mysql
+        - PMA_PORT=3306
+      depends_on:
+        - blog-mysql
+      ports:
+        - "9080:80"
+      restart: always
